@@ -55,6 +55,7 @@ function drawVisualizer(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   const playing=audioReady&&Tone.Transport.state==="started";
   const bars=64,w=canvas.width/bars;
+
   for(let i=0;i<bars;i++){
     const h=playing?(Math.random()*110+10):(Math.random()*8);
     ctx.fillStyle=i%3===0?"#39ff14":i%3===1?"#ff27d8":"#fff";
@@ -90,6 +91,7 @@ function setupAudio(){
 function generateDrums(){
   const s=styleSettings(),p=Array(STEPS).fill(null);
   const comp=state.complexity*s.drum,ghost=state.ghost*s.drum;
+
   for(let i=0;i<STEPS;i++){
     const e=[];
     if([0,8,16,24].includes(i))e.push("kick");
@@ -101,24 +103,34 @@ function generateDrums(){
     if(e.length>3)e.length=3;
     p[i]=e.length?e:null;
   }
+
   return p;
 }
 
 function generateBass(){
   const s=styleSettings(),p=Array(STEPS).fill(null);
   const notes=state.style==="dark"?["C2","Bb1","Db2","Eb2","F1"]:["C2","Eb2","F2","G2","Bb1","C3"];
+
   for(let i=0;i<STEPS;i++){
     if(i%4===0||chance(state.complexity*.14*s.bass))p[i]=pick(notes);
   }
+
   return p;
 }
 
 function generatePads(){
   const s=styleSettings(),p=Array(STEPS).fill(null);
-  const chords=[["C4","Eb4","G4","Bb4"],["Ab3","C4","Eb4","G4"],["F3","Ab3","C4","Eb4"],["Bb3","D4","F4","Ab4"]];
+  const chords=[
+    ["C4","Eb4","G4","Bb4"],
+    ["Ab3","C4","Eb4","G4"],
+    ["F3","Ab3","C4","Eb4"],
+    ["Bb3","D4","F4","Ab4"]
+  ];
+
   p[0]=pick(chords);
   if(chance(80*s.pad))p[16]=pick(chords);
   if(state.style==="atmospheric"&&chance(60))p[24]=pick(chords);
+
   return p;
 }
 
@@ -126,36 +138,53 @@ function generateLead(){
   const s=styleSettings(),p=Array(STEPS).fill(null);
   const notes=["C5","D5","Eb5","F5","G5","Bb5","C6"];
   let hits=0,maxHits=Math.floor(4+(state.digi/20)*s.lead);
+
   for(let i=1;i<STEPS;i+=2){
-    if(hits<maxHits&&chance(state.digi*.16*s.lead)){p[i]=pick(notes);hits++;}
+    if(hits<maxHits&&chance(state.digi*.16*s.lead)){
+      p[i]=pick(notes);
+      hits++;
+    }
   }
+
   return p;
 }
 
 function generateFX(){
   const s=styleSettings(),p=Array(STEPS).fill(null);
-  [0,15,16,31].forEach(step=>{if(chance(60*s.fx))p[step]=pick(["C6","G6","Bb5"])});
+  [0,15,16,31].forEach(step=>{
+    if(chance(60*s.fx))p[step]=pick(["C6","G6","Bb5"]);
+  });
   return p;
 }
 
 function generatePatterns(){
   const wasPlaying=audioReady&&Tone.Transport.state==="started";
-  if(wasPlaying){Tone.Transport.stop();currentStep=0;}
+
+  if(wasPlaying){
+    Tone.Transport.stop();
+    currentStep=0;
+  }
+
   for(const t of Object.keys(state.tracks)){
     if(state.tracks[t].locked)continue;
+
     if(t==="drums")state.tracks[t].pattern=generateDrums();
     if(t==="bass")state.tracks[t].pattern=generateBass();
     if(t==="pads")state.tracks[t].pattern=generatePads();
     if(t==="lead")state.tracks[t].pattern=generateLead();
     if(t==="fx")state.tracks[t].pattern=generateFX();
   }
-  paintSequencer();updateTrackDots();
+
+  paintSequencer();
+  updateTrackDots();
   statusText.textContent=`${styleSelect.options[styleSelect.selectedIndex].text.toUpperCase()} GENERATED`;
+
   if(wasPlaying)Tone.Transport.start("+0.05");
 }
 
 function playStep(time){
   const tr=state.tracks;
+
   if(!tr.drums.muted){
     const events=tr.drums.pattern[currentStep];
     if(events)events.forEach(e=>{
@@ -165,23 +194,45 @@ function playStep(time){
       if(e==="ghost")drumSynths.ghost.triggerAttackRelease("32n",time,tr.drums.volume*.18);
     });
   }
+
   if(!tr.bass.muted&&tr.bass.pattern[currentStep])bassSynth.triggerAttackRelease(tr.bass.pattern[currentStep],"8n",time,tr.bass.volume);
   if(!tr.pads.muted&&tr.pads.pattern[currentStep])padSynth.triggerAttackRelease(tr.pads.pattern[currentStep],"2n",time,tr.pads.volume*.38);
   if(!tr.lead.muted&&tr.lead.pattern[currentStep])leadSynth.triggerAttackRelease(tr.lead.pattern[currentStep],"16n",time,tr.lead.volume*.5);
   if(!tr.fx.muted&&tr.fx.pattern[currentStep])fxSynth.triggerAttackRelease(tr.fx.pattern[currentStep],"16n",time,tr.fx.volume*.3);
+
   paintSequencer();
   currentStep=(currentStep+1)%STEPS;
 }
 
 async function play(){
-  if(!audioReady){await Tone.start();setupAudio();audioReady=true;}
+  if(!audioReady){
+    await Tone.start();
+    setupAudio();
+    audioReady=true;
+  }
+
   Tone.Transport.bpm.value=state.bpm;
-  if(!loop){loop=new Tone.Loop(playStep,"16n");loop.start(0);}
+
+  if(!loop){
+    loop=new Tone.Loop(playStep,"16n");
+    loop.start(0);
+  }
+
   Tone.Transport.start();
   statusText.textContent="PLAYING";
 }
-function pause(){if(audioReady)Tone.Transport.pause();statusText.textContent="PAUSED"}
-function stop(){if(audioReady)Tone.Transport.stop();currentStep=0;paintSequencer();statusText.textContent="STOPPED"}
+
+function pause(){
+  if(audioReady)Tone.Transport.pause();
+  statusText.textContent="PAUSED";
+}
+
+function stop(){
+  if(audioReady)Tone.Transport.stop();
+  currentStep=0;
+  paintSequencer();
+  statusText.textContent="STOPPED";
+}
 
 function updateTrackDots(){
   document.querySelectorAll(".track-row").forEach(row=>{
@@ -194,47 +245,141 @@ function updateTrackDots(){
 
 function downloadMidi(){
   if(!state.tracks.drums.pattern.length)generatePatterns();
-  const tracks=[],ticks=120,map={kick:"C2",snare:"D2",hat:"F#2",ghost:"D#2"};
+
+  const tracks=[];
+  const ticks=120;
+  const map={kick:"C2",snare:"D2",hat:"F#2",ghost:"D#2"};
+
   for(const [name,data] of Object.entries(state.tracks)){
     if(data.muted)continue;
+
     const mt=new MidiWriter.Track();
     mt.setTempo(state.bpm);
     mt.addTrackName(name.toUpperCase());
+
     data.pattern.forEach((event,step)=>{
       if(!event)return;
+
       const startTick=step*ticks;
+
       if(name==="drums"){
-        event.forEach(d=>mt.addEvent(new MidiWriter.NoteEvent({pitch:[map[d]],duration:"T60",startTick,velocity:90})));
+        event.forEach(d=>{
+          mt.addEvent(new MidiWriter.NoteEvent({
+            pitch:[map[d]],
+            duration:"T60",
+            startTick,
+            velocity:90
+          }));
+        });
       }else if(name==="pads"){
-        mt.addEvent(new MidiWriter.NoteEvent({pitch:event,duration:"T960",startTick,velocity:55}));
+        mt.addEvent(new MidiWriter.NoteEvent({
+          pitch:event,
+          duration:"T960",
+          startTick,
+          velocity:55
+        }));
       }else{
-        mt.addEvent(new MidiWriter.NoteEvent({pitch:[event],duration:"T240",startTick,velocity:75}));
+        mt.addEvent(new MidiWriter.NoteEvent({
+          pitch:[event],
+          duration:"T240",
+          startTick,
+          velocity:75
+        }));
       }
     });
+
     tracks.push(mt);
   }
-  if(!tracks.length){statusText.textContent="UNMUTE AT LEAST ONE TRACK";return;}
-  const writer=new MidiWriter.Writer(tracks);
-  const a=document.createElement("a");
-  a.href=writer.dataUri();
-  a.download=`drum-and-gen-${state.style}-${state.bpm}bpm.mid`;
-  document.body.appendChild(a);a.click();a.remove();
-  statusText.textContent="MIDI DOWNLOADED";
+
+  if(!tracks.length){
+    statusText.textContent="UNMUTE AT LEAST ONE TRACK";
+    return;
+  }
+
+  try{
+    const writer=new MidiWriter.Writer(tracks);
+    const midiData=writer.buildFile();
+
+    const blob=new Blob([midiData],{type:"audio/midi"});
+    const url=URL.createObjectURL(blob);
+    const filename=`drum-and-gen-${state.style}-${state.bpm}bpm.mid`;
+
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=filename;
+    a.style.display="none";
+
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(()=>{
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },1000);
+
+    statusText.textContent="MIDI EXPORTED";
+  }catch(err){
+    console.error(err);
+    statusText.textContent="MIDI EXPORT FAILED";
+    alert("MIDI export failed. Check the browser console for details.");
+  }
 }
 
 function hookControls(){
-  bpmSlider.oninput=()=>{state.bpm=+bpmSlider.value;bpmReadout.textContent=`${state.bpm} BPM`;if(audioReady)Tone.Transport.bpm.value=state.bpm};
+  bpmSlider.oninput=()=>{
+    state.bpm=+bpmSlider.value;
+    bpmReadout.textContent=`${state.bpm} BPM`;
+    if(audioReady)Tone.Transport.bpm.value=state.bpm;
+  };
+
   complexitySlider.oninput=()=>state.complexity=+complexitySlider.value;
   ghostSlider.oninput=()=>state.ghost=+ghostSlider.value;
   digiSlider.oninput=()=>state.digi=+digiSlider.value;
-  styleSelect.onchange=()=>{state.style=styleSelect.value;generatePatterns()};
-  $("playBtn").onclick=play;$("pauseBtn").onclick=pause;$("stopBtn").onclick=stop;$("generateBtn").onclick=generatePatterns;
-  $("randomBtn").onclick=()=>{state.bpm=Math.floor(rand(154,179));state.complexity=Math.floor(rand(35,92));state.ghost=Math.floor(rand(25,85));state.digi=Math.floor(rand(20,90));bpmSlider.value=state.bpm;complexitySlider.value=state.complexity;ghostSlider.value=state.ghost;digiSlider.value=state.digi;bpmReadout.textContent=`${state.bpm} BPM`;generatePatterns()};
+
+  styleSelect.onchange=()=>{
+    state.style=styleSelect.value;
+    generatePatterns();
+  };
+
+  $("playBtn").onclick=play;
+  $("pauseBtn").onclick=pause;
+  $("stopBtn").onclick=stop;
+  $("generateBtn").onclick=generatePatterns;
+
+  $("randomBtn").onclick=()=>{
+    state.bpm=Math.floor(rand(154,179));
+    state.complexity=Math.floor(rand(35,92));
+    state.ghost=Math.floor(rand(25,85));
+    state.digi=Math.floor(rand(20,90));
+
+    bpmSlider.value=state.bpm;
+    complexitySlider.value=state.complexity;
+    ghostSlider.value=state.ghost;
+    digiSlider.value=state.digi;
+    bpmReadout.textContent=`${state.bpm} BPM`;
+
+    generatePatterns();
+  };
+
   $("downloadBtn").onclick=downloadMidi;
+
   document.querySelectorAll(".track-row").forEach(row=>{
-    const t=row.dataset.track,m=row.querySelector(".mute-btn"),l=row.querySelector(".lock-btn"),v=row.querySelector(".vol");
-    m.onclick=()=>{state.tracks[t].muted=!state.tracks[t].muted;m.classList.toggle("muted",state.tracks[t].muted);updateTrackDots()};
-    l.onclick=()=>{state.tracks[t].locked=!state.tracks[t].locked;l.classList.toggle("locked",state.tracks[t].locked)};
+    const t=row.dataset.track;
+    const m=row.querySelector(".mute-btn");
+    const l=row.querySelector(".lock-btn");
+    const v=row.querySelector(".vol");
+
+    m.onclick=()=>{
+      state.tracks[t].muted=!state.tracks[t].muted;
+      m.classList.toggle("muted",state.tracks[t].muted);
+      updateTrackDots();
+    };
+
+    l.onclick=()=>{
+      state.tracks[t].locked=!state.tracks[t].locked;
+      l.classList.toggle("locked",state.tracks[t].locked);
+    };
+
     v.oninput=()=>state.tracks[t].volume=+v.value;
   });
 }
