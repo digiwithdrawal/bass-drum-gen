@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DRUM & GEN</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/build/MidiWriter.min.js"></script>
+</head>
+
+<body>
+  <div class="scanlines"></div>
+  <div class="grid-bg"></div>
+
+  <main class="app">
+    <header class="hero">
+      <div>
+        <h1>DRUM & GEN</h1>
+        <h2>Y2K JUNGLE & DRUM BASS GENERATOR</h2>
+      </div>
+      <div class="badge">
+        <span>LIVE</span>
+        <span>MIDI SYSTEM</span>
+      </div>
+    </header>
+
+    <section class="transport">
+      <button id="playBtn" class="icon-btn" aria-label="Play">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button id="pauseBtn" class="icon-btn" aria-label="Pause">
+        <svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+      </button>
+      <button id="stopBtn" class="icon-btn" aria-label="Stop">
+        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+      </button>
+      <button id="generateBtn" class="icon-btn hot" aria-label="Generate">
+        <svg viewBox="0 0 24 24"><path d="M12 2l2 7 7 3-7 3-2 7-2-7-7-3 7-3z"/></svg>
+      </button>
+      <button id="randomBtn" class="icon-btn" aria-label="Random">
+        <svg viewBox="0 0 24 24"><path d="M17 3h4v4h-2V5h-2c-2 0-3.1 1.2-4.4 3.5l-1 1.8C9.9 13.3 8.3 15 5 15H3v-2h2c2 0 3.1-1.2 4.4-3.5l1-1.8C12.1 4.7 13.7 3 17 3zM17 19h2v-2h2v4h-4c-3.3 0-4.9-1.7-6.6-4.7l1.2-2.1C12.9 17 14 19 17 19zM3 7V5h2c1.5 0 2.7.4 3.7 1.1L7.6 8C6.9 7.3 6.1 7 5 7z"/></svg>
+      </button>
+      <button id="downloadBtn" class="icon-btn" aria-label="Download MIDI">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10l4-4 1.4 1.4L12 15.8l-5.4-5.4L8 9l4 4V3zM5 19h14v2H5z"/></svg>
+      </button>
+    </section>
+
+    <section class="status">
+      <span id="statusText">PRESS PLAY OR GENERATE</span>
+      <span id="bpmReadout">170 BPM</span>
+    </section>
+
+    <section class="visualizer-wrap">
+      <canvas id="visualizer" width="900" height="150"></canvas>
+    </section>
+
+    <section class="pattern-panel">
+      <div class="pattern-head">
+        <span>SEQUENCER MAP</span>
+        <span>32 STEPS</span>
+      </div>
+      <div id="sequencerGrid" class="sequencer-grid"></div>
+    </section>
+
+    <section class="control-panel">
+      <label>
+        STYLE
+        <select id="styleSelect">
+          <option value="y2k">Y2K Digi Jungle</option>
+          <option value="atmospheric">Atmospheric Jungle</option>
+          <option value="liquid">Liquid DnB</option>
+          <option value="dark">Darkside Jungle</option>
+          <option value="breaky">Breakbeat Madness</option>
+        </select>
+      </label>
+
+      <label>BPM <input id="bpmSlider" type="range" min="150" max="180" value="170"></label>
+      <label>COMPLEXITY <input id="complexitySlider" type="range" min="0" max="100" value="68"></label>
+      <label>GHOST NOTES <input id="ghostSlider" type="range" min="0" max="100" value="58"></label>
+      <label>DIGI FX <input id="digiSlider" type="range" min="0" max="100" value="60"></label>
+    </section>
+
+    <section class="tracks">
+      <div class="track-row" data-track="drums"><strong>DRUMS</strong><div class="track-dots"></div><input class="vol" type="range" min="0" max="1" step="0.01" value="0.95"><button class="mini-btn mute-btn" aria-label="Mute Drums"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/></svg></button><button class="mini-btn lock-btn" aria-label="Lock Drums"><svg viewBox="0 0 24 24"><path d="M7 10V8a5 5 0 0110 0v2h1v11H6V10zm2 0h6V8a3 3 0 00-6 0z"/></svg></button></div>
+      <div class="track-row" data-track="bass"><strong>BASS</strong><div class="track-dots"></div><input class="vol" type="range" min="0" max="1" step="0.01" value="0.85"><button class="mini-btn mute-btn" aria-label="Mute Bass"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/></svg></button><button class="mini-btn lock-btn" aria-label="Lock Bass"><svg viewBox="0 0 24 24"><path d="M7 10V8a5 5 0 0110 0v2h1v11H6V10zm2 0h6V8a3 3 0 00-6 0z"/></svg></button></div>
+      <div class="track-row" data-track="pads"><strong>PADS</strong><div class="track-dots"></div><input class="vol" type="range" min="0" max="1" step="0.01" value="0.6"><button class="mini-btn mute-btn" aria-label="Mute Pads"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/></svg></button><button class="mini-btn lock-btn" aria-label="Lock Pads"><svg viewBox="0 0 24 24"><path d="M7 10V8a5 5 0 0110 0v2h1v11H6V10zm2 0h6V8a3 3 0 00-6 0z"/></svg></button></div>
+      <div class="track-row" data-track="lead"><strong>LEAD</strong><div class="track-dots"></div><input class="vol" type="range" min="0" max="1" step="0.01" value="0.55"><button class="mini-btn mute-btn" aria-label="Mute Lead"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/></svg></button><button class="mini-btn lock-btn" aria-label="Lock Lead"><svg viewBox="0 0 24 24"><path d="M7 10V8a5 5 0 0110 0v2h1v11H6V10zm2 0h6V8a3 3 0 00-6 0z"/></svg></button></div>
+      <div class="track-row" data-track="fx"><strong>FX</strong><div class="track-dots"></div><input class="vol" type="range" min="0" max="1" step="0.01" value="0.5"><button class="mini-btn mute-btn" aria-label="Mute FX"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/></svg></button><button class="mini-btn lock-btn" aria-label="Lock FX"><svg viewBox="0 0 24 24"><path d="M7 10V8a5 5 0 0110 0v2h1v11H6V10zm2 0h6V8a3 3 0 00-6 0z"/></svg></button></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
